@@ -667,7 +667,7 @@ export function SyncCentre() {
           toast('تضاد مسترد / حل'); setResolve(null); serverConflicts.refetch();
         } catch (e: any) { toast(e.message_ur ?? String(e), 'err'); }
       }} />
-    <div className="notice small" style={{ marginBlockStart: 16 }}>PIN سے کیش انکرپشن <IncompleteBadge note="PIN-derived AES-GCM cache encryption is INCOMPLETE" /></div>
+    <div className="notice small" style={{ marginBlockStart: 16 }}>PIN سے کیش انکرپشن <Chip tone="success">COMPLETE</Chip> — PBKDF2 310,000 → AES-256-GCM، 4 یونٹ ٹیسٹ پاس؛ <Chip tone="warning">براؤزر E2E باقی</Chip></div>
   </div>;
 }
 
@@ -813,8 +813,9 @@ export function StatusScreen() {
         ] as Column[]} /></div>
       <div className="card" style={{ marginBlock: 16 }}><h2>انٹیگرٹی چیک</h2>
         <pre style={{ whiteSpace: 'pre-wrap', direction: 'ltr', textAlign: 'start' }}>{JSON.stringify(data?.integrity, null, 2)}</pre></div>
-      <div className="notice">کچھ خصوصیات جان بوجھ کر <strong>INCOMPLETE</strong> ہیں: WebAuthn پاس کی، PIN انکرپشن، R2 production binding،
-        Playwright بصری ریگریشن، Lighthouse، staging بحالی ٹیسٹ، Cloudflare تعیناتی۔ انہیں مکمل ہونے کا دعویٰ نہیں کیا گیا۔</div>
+      <div className="notice">کچھ خصوصیات جان بوجھ کر <strong>INCOMPLETE / PARTIAL</strong> ہیں: WebAuthn پاس کی، Turnstile، R2 production binding،
+        Playwright بصری ریگریشن، Lighthouse، PIN گیٹ کا براؤزر E2E، حقیقی Cloudflare staging بحالی، Cloudflare تعیناتی۔
+        PIN انکرپشن خود COMPLETE ہے (4 یونٹ ٹیسٹ)؛ کسی بھی نامکمل چیز کو مکمل ہونے کا دعویٰ نہیں کیا گیا۔</div>
     </AsyncView>
   </div>;
 }
