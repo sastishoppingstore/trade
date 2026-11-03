@@ -153,8 +153,21 @@ Total Upload: 1340.52 KiB / gzip: 244.44 KiB   → exit 0, 0 warnings
 ```
 
 `wrangler.v2.jsonc` uses only NEW resource names (`zt-v2-*`); the old `wrangler.jsonc` is untouched.
-No Account ID, API token or R2 key is stored in Git. No D1/R2 was created, no remote migration, no
-deploy, no live URL. See `docs/NEW_PROJECT_DEPLOY.md`.
+No Account ID, API token or R2 key is stored in Git.
+
+Real deploy attempt (after the push, 12:53 PKT):
+```
+$ curl ... https://api.cloudflare.com/client/v4/
+curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL ... / http=000
+$ curl ... https://registry.npmjs.org/  -> http=200
+$ env | grep -c '^CLOUDFLARE_'  -> 0
+$ CI=1 npx wrangler deploy -c wrangler.v2.jsonc --env staging
+✘ [ERROR] In a non-interactive environment, it's necessary to set a CLOUDFLARE_API_TOKEN ...
+deploy_exit=1
+```
+A `workflow_dispatch` deploy workflow (`.github/workflows/deploy-v2.yml`, YAML parsed OK, 14 steps) was
+added for the owner to run from GitHub Actions with repository secrets. It has NOT run. No D1/R2 created,
+no remote migration, no deploy, no live URL. See `docs/NEW_PROJECT_DEPLOY.md`.
 
 ## 10. Live feature endpoint
 

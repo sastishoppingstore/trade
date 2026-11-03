@@ -21,9 +21,13 @@ Anything unfinished is labelled `INCOMPLETE` or `PARTIAL` in `/erp/status` (`GET
    has staging/production dry-runs only; the old `wrangler.jsonc` is untouched and still has
    `REPLACE_WITH_REAL_D1_UUID` placeholders. No D1/R2 created, no remote migrations, no deploy.
 2. **Cloudflare API reachability** — from this sandbox `api.cloudflare.com` and the R2 S3 endpoint
-   return `curl (35) SSL_ERROR_SYSCALL` / `http=000`, while `registry.npmjs.org` returns 200. Outbound
-   is limited to github.com / npm / pypi, so `d1 create`, `r2 bucket create`, `secret put` and `deploy`
-   cannot complete here. Commands are documented in `docs/NEW_PROJECT_DEPLOY.md`.
+   return `curl (35) SSL_ERROR_SYSCALL` / `http=000`, while `registry.npmjs.org` returns 200. A real
+   `CI=1 npx wrangler deploy -c wrangler.v2.jsonc --env staging` was attempted on 2026-11-03 and exited 1
+   (`In a non-interactive environment, it's necessary to set a CLOUDFLARE_API_TOKEN ...`; 0 credential
+   env vars present). Outbound is limited to github.com / npm / pypi, so `d1 create`, `r2 bucket create`,
+   `secret put` and `deploy` cannot complete here. A safe `workflow_dispatch` workflow
+   (`.github/workflows/deploy-v2.yml`) was added so the owner can deploy from GitHub Actions using
+   repository secrets; it has **NOT been run**. Commands: `docs/NEW_PROJECT_DEPLOY.md`.
 3. **Domain / RP ID** — deferred by the owner. WebAuthn credentials are domain-bound, so passkeys must
    be enrolled only after the final domain is set.
 4. **Real Cloudflare Turnstile `siteverify`** — the server gate is implemented and unit-tested with an

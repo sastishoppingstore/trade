@@ -117,3 +117,48 @@ live docs on the deploy date; figures researched 2026-11-03 are in `docs/ASSUMPT
 real Cloudflare edge cache purge verification, real Turnstile siteverify, a live public URL,
 and a physical-Android-Chrome Urdu PDF screenshot. All are labelled honestly in
 `/erp/status`, `docs/KNOWN_LIMITATIONS.md` and the final report.
+
+## 7. REAL deploy attempt from this sandbox (2026-11-03, 12:53 PKT)
+
+The owner asked to deploy after the push. A real `wrangler deploy` WAS attempted; no result was faked:
+
+```
+$ curl -sS --max-time 8 -o /dev/null -w 'api.cloudflare.com http=%{http_code}' https://api.cloudflare.com/client/v4/
+curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to api.cloudflare.com:443
+api.cloudflare.com http=000
+$ curl -sS --max-time 8 -o /dev/null -w 'registry.npmjs.org http=%{http_code}' https://registry.npmjs.org/
+registry.npmjs.org http=200
+$ env | grep -c '^CLOUDFLARE_'
+0
+$ CI=1 npx wrangler deploy -c wrangler.v2.jsonc --env staging
+⛅️ wrangler 4.45.0
+✘ [ERROR] In a non-interactive environment, it's necessary to set a CLOUDFLARE_API_TOKEN
+   environment variable for wrangler to work.
+deploy_exit=1
+```
+
+Two independent blockers: (1) no Cloudflare credential is stored in this workspace — the API token and
+R2 S3 keys pasted in chat were deliberately **never persisted** (and must be rotated); (2) outbound
+network is limited to github.com / npm / pypi, so even with a token `api.cloudflare.com` is unreachable.
+**Therefore: no deploy, no D1, no R2, no verified URL. Deployment remains INCOMPLETE.**
+
+## 8. Safe one-click path — GitHub Actions (`.github/workflows/deploy-v2.yml`)
+
+GitHub Actions runners CAN reach Cloudflare, so the owner supplies access **securely through GitHub
+Secrets** — never in chat, never in Git:
+
+1. GitHub → Settings → Secrets and variables → Actions → **New repository secret**, add:
+   `CLOUDFLARE_API_TOKEN` (fresh/rotated), `CLOUDFLARE_ACCOUNT_ID`, `V2_SETUP_TOKEN`,
+   `V2_SESSION_SECRET`, `V2_DATA_ENCRYPTION_KEY`, `V2_BACKUP_ENCRYPTION_KEY`.
+   Generate the last three with `openssl rand -base64 32`. `V2_SETUP_TOKEN` is shown to the operator
+   once and used for the one-time `/api/v1/setup`.
+2. Optional: `TURNSTILE_SECRET`, `TURNSTILE_SITEKEY` once the real widget exists.
+3. Actions → **Deploy zt-v2 (NEW project only)** → Run workflow → choose `staging` →
+   type `CREATE-NEW`. The workflow verifies the token, runs `check:all` + `deploy:dryrun`, creates
+   ONLY `zt-v2-*` D1/R2 resources, applies remote migrations, sets Worker secrets, deploys and prints
+   the real URL. Repeat with `production` only after staging is verified.
+4. Enter `rp_id` / `rp_origin` ONLY after the final domain is chosen; WebAuthn credentials are
+   domain-bound, so passkeys must be enrolled afterwards.
+
+The workflow is `workflow_dispatch`-only with a confirmation phrase: it cannot run accidentally and
+never references the old project. It is **NOT YET RUN** — no live URL is claimed.

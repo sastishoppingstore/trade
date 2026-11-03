@@ -71,7 +71,9 @@ Cron (19:00 UTC = 00:00 PKT) runs integrity, encrypted backup, cleanup and notif
    The deploy operator prints `SETUP_TOKEN` **once**; `EXPOSE_SETUP_TOKEN` must stay unset.
 7. `npm run build:web` → `npm run deploy:dryrun` → `wrangler d1 migrations apply ... --remote` →
    `wrangler deploy -c wrangler.v2.jsonc --env staging`, verify HTTP, then repeat for production.
-   Real URLs may be reported **only after** an HTTP check. Full commands: `docs/NEW_PROJECT_DEPLOY.md`.
+   Real URLs may be reported **only after** an HTTP check. Full commands: `docs/NEW_PROJECT_DEPLOY.md`. Alternatively run the `workflow_dispatch` workflow
+`.github/workflows/deploy-v2.yml` from GitHub Actions after adding the repository secrets; it creates only
+`zt-v2-*` resources and has not been executed yet.
 
 ## 5. Backups
 

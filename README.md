@@ -86,7 +86,9 @@ The old `wrangler.jsonc` was never touched.
 **Not done:** D1/R2 creation, remote migrations, secrets, staging/production deploy, real staging restore,
 real Cloudflare Turnstile/edge-cache verification, and any verified live URL. This sandbox can reach only
 github.com / npm / pypi — `api.cloudflare.com` returns `SSL_ERROR_SYSCALL` (`http=000`). Domain is deferred
-by the owner. Exact commands: `docs/NEW_PROJECT_DEPLOY.md`. Do not treat the local preview URL as production.
+by the owner. Exact commands: `docs/NEW_PROJECT_DEPLOY.md`. A safe `workflow_dispatch` deploy workflow
+(`.github/workflows/deploy-v2.yml`) lets the owner deploy from GitHub Actions using repository secrets —
+it has NOT been run. Do not treat the local preview URL as production.
 
 ## Verified Cloudflare facts (2026-11-03, re-checked against live docs)
 
