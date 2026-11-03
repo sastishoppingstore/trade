@@ -161,4 +161,33 @@ Secrets** — never in chat, never in Git:
    domain-bound, so passkeys must be enrolled afterwards.
 
 The workflow is `workflow_dispatch`-only with a confirmation phrase: it cannot run accidentally and
-never references the old project. It is **NOT YET RUN** — no live URL is claimed.
+never references the old project. Both environments set `workers_dev: true`, so a successful deploy
+gets Cloudflare's **free `*.workers.dev` URL** first; the custom domain is linked later as the owner asked.
+
+### Real dispatch (2026-11-03) — it ran, but stopped at the secret guard
+
+PR #2 (`arena/31aaac0f-trade` → `main`) was merged so the workflow exists on the default branch.
+A real manual dispatch was then made:
+
+```
+$ gh workflow run deploy-v2.yml --ref main -f environment=staging -f confirm=CREATE-NEW
+dispatch_exit=0
+$ gh run view 41641152183 --json status,conclusion,url
+{"conclusion":"failure","status":"completed",
+ "url":"https://github.com/sastishoppingstore/trade/actions/runs/41641152183"}
+```
+
+Runner log (real output):
+```
+X Missing repository secret: CLOUDFLARE_API_TOKEN
+X Missing repository secret: CLOUDFLARE_ACCOUNT_ID
+X Missing repository secret: V2_SETUP_TOKEN
+X Missing repository secret: V2_SESSION_SECRET
+X Missing repository secret: V2_DATA_ENCRYPTION_KEY
+```
+
+No Cloudflare resource was created and **no live URL exists**. `gh secret list` from this sandbox returns
+`HTTP 403: Resource not accessible by integration`, so the agent cannot add those secrets either — only
+the repository owner can, through GitHub → Settings → Secrets and variables → Actions. Once the six
+secrets are present, re-run the same workflow: it will create the `zt-v2-*` D1/R2 resources, apply remote
+migrations, deploy and print the real `*.workers.dev` URL. Deployment remains **INCOMPLETE**.

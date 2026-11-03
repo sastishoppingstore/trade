@@ -166,8 +166,11 @@ $ CI=1 npx wrangler deploy -c wrangler.v2.jsonc --env staging
 deploy_exit=1
 ```
 A `workflow_dispatch` deploy workflow (`.github/workflows/deploy-v2.yml`, YAML parsed OK, 14 steps) was
-added for the owner to run from GitHub Actions with repository secrets. It has NOT run. No D1/R2 created,
-no remote migration, no deploy, no live URL. See `docs/NEW_PROJECT_DEPLOY.md`.
+added, merged to `main` via PR #2 (CI `verify` pass) and really dispatched:
+`gh workflow run deploy-v2.yml --ref main -f environment=staging -f confirm=CREATE-NEW` → exit 0;
+run `41641152183` concluded **failure** at the secret guard (six missing repository secrets). No D1/R2
+created, no remote migration, no deploy, no live URL. `workers_dev: true` is set so a successful run
+yields a free `*.workers.dev` URL. See `docs/NEW_PROJECT_DEPLOY.md`.
 
 ## 10. Live feature endpoint
 
