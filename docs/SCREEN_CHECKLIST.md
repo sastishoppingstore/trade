@@ -14,7 +14,7 @@ Live machine-readable version: `GET /api/v1/features` → `/erp/status`. See `do
 | Offline | `OfflineBanner` + Dexie outbox + PROVISIONAL numbering |
 | Permission denied | `AsyncView permission` + `requirePerm()` on the Worker (H5) |
 | A11y | semantic labels, `aria-*`, keyboard Escape/focus, RTL logical properties |
-| 360 / 390 / 768 / 1280 | responsive CSS; **Playwright snapshots INCOMPLETE** |
+| 360 / 390 / 768 / 1280 | responsive CSS; **44 real Chromium baselines, 2nd run 0 % diff** (`docs/VISUAL_REPORT.md`) |
 
 ## PUB-01…09
 
@@ -59,15 +59,19 @@ Live machine-readable version: `GET /api/v1/features` → `/erp/status`. See `do
 | ID | Item | State |
 |---|---|---|
 | P8-OFFLINE | PWA / Dexie outbox / 4 sync triggers | COMPLETE |
-| P8-PIN | PIN-derived AES-GCM cache encryption | COMPLETE (4 unit tests; browser E2E pending) |
-| P8-PASSKEYS | WebAuthn passkeys | **INCOMPLETE** |
-| P8-TURNSTILE | Turnstile | **INCOMPLETE** |
+| P8-PIN | PIN-derived AES-GCM cache encryption | COMPLETE (4 unit tests + browser E2E, 4/4 encrypted IndexedDB rows) |
+| P8-PASSKEYS | WebAuthn passkeys | COMPLETE (`A15_E2E_PASS`; real phone untested) |
+| P8-TURNSTILE | Turnstile | PARTIAL (server siteverify gate + local tests; real CF unverified) |
 | P8-R2 | Private R2 | PARTIAL (local uploads work; production binding not configured) |
-| P8-CACHE-PURGE | Edge cache purge | PARTIAL (in-process cache only) |
+| P8-CACHE-PURGE | Edge cache purge | COMPLETE (generation + known-key delete; live edge unverified) |
 | P9-QUERY-PLAN | EXPLAIN QUERY PLAN CI gate | COMPLETE (15/15) |
-| P9-VISUAL | Playwright visual regression | **INCOMPLETE** |
-| P9-LIGHTHOUSE | Lighthouse | **INCOMPLETE** |
-| P9-A11Y | a11y / 360–1280 | PARTIAL |
+| P9-VISUAL | Playwright visual regression | COMPLETE (44 baselines / 0 % drift) |
+| P9-LIGHTHOUSE | Lighthouse | COMPLETE (100/100/100 on 3 pages) |
+| P9-A11Y | a11y / 360–1280 | COMPLETE (axe-core 0 violations on 8 pages) |
 | P11-DOCS | docs / CSV / OpenAPI | COMPLETE |
 | P12-RESTORE | staging restore test | PARTIAL (local staging-equivalent PASSED; Cloudflare staging not run) |
+| P9-PRINT | Urdu print / PDF proof | COMPLETE (desktop + Android-emulated; physical device INCOMPLETE) |
+| P9-QUOTA | A19 quota/cache guard | COMPLETE (200 hits: rows_read=1, cached_hits=199) |
+| P9-ROUTES | A20 route matrix | COMPLETE (29 CSRF, 24 AUDITOR writes, IDOR/SQLi/XSS) |
+| P12-NEW-PROJECT | New project config | PARTIAL (`wrangler.v2.jsonc` dry-runs exit 0; not deployed) |
 | P12-DEPLOY | Cloudflare deployment | **INCOMPLETE** |

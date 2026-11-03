@@ -1,16 +1,26 @@
 # RUNBOOK — operations, deployment and restore
 
-> **Deployment is INCOMPLETE.** No Cloudflare account, domain or D1 UUID was supplied. Steps 4–8 are
-> written but **not executed**; do not claim they have been done.
+> **Deployment is INCOMPLETE.** A NEW project config `wrangler.v2.jsonc` (`zt-v2-*`) is READY and its
+> staging/production dry-runs exit 0, but no Cloudflare resource was created: `api.cloudflare.com` is
+> unreachable from this sandbox and the domain is deferred. Steps 4–8 are written but **not executed**.
+> Use `wrangler.v2.jsonc` (not the old `wrangler.jsonc`) and `docs/NEW_PROJECT_DEPLOY.md`.
 
 ## 1. Local preview / development
 
 ```bash
 npm install --no-audit --no-fund
-npm run migrate:local     # all migrations/*.sql -> .dev/zt.db (76 tables)
+npm run migrate:local     # all migrations/*.sql -> .dev/zt.db (77 tables)
 npm run build:web         # apps/web/dist
 npm run server            # one port: SPA + real Hono API, 0.0.0.0:3000
-npm run check:all         # typecheck, 37 tests, query-plan gate, build
+npm run check:all         # typecheck, 54 tests, query-plan gate, build
+npm run docs:features     # regenerate docs/FEATURE_CHECKLIST.md from live API
+npm run e2e:passkeys      # real Chromium virtual-authenticator passkey E2E
+npm run e2e:pin           # PIN gate + encrypted IndexedDB E2E
+npm run test:visual       # 44 baselines / 0 % drift at 360/390/768/1280
+npm run test:a11y         # axe-core, 8 pages, 0 violations
+npm run test:lighthouse   # Lighthouse 13 mobile, 3 pages
+npm run test:print        # Urdu A4 PDF + desktop/Android-emulated screenshots
+npm run deploy:dryrun     # new project staging + production dry-run (no network needed)
 ```
 
 On first start the server prints a **one-time setup token** and stores four random secrets in `.dev/secrets.json` (mode `0600`, git-ignored). `EXPOSE_SETUP_TOKEN=1` is set **only** in local preview; production must never set it.
@@ -43,20 +53,27 @@ Cron (19:00 UTC = 00:00 PKT) runs integrity, encrypted backup, cleanup and notif
 
 ## 4. Cloudflare prerequisites (NOT DONE)
 
-1. Verify limits/prices again at deploy time (see README / ASSUMPTIONS for the 2026-11-03 check).
-2. Create D1 databases `zt-staging`, `zt-production` and private R2 buckets `zt-private-staging`, `zt-private-production`.
-3. Put real UUIDs in `wrangler.jsonc` (replace `REPLACE_WITH_REAL_D1_UUID`), set the domain/routes.
-4. Choose **Workers Paid** (Free's 10 ms CPU and 100 k writes/day are inadequate for posting batches).
-5. Set secrets — never in files, never in git:
+1. Verify limits/prices again at deploy time — the 2026-11-03 figures could NOT be re-checked here.
+2. Set `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as **environment variables only** (never in Git).
+   Use fresh/rotated credentials; the ones pasted in chat must be revoked.
+3. Create ALL-NEW resources: `zt-v2-staging`, `zt-v2-production` D1 and `zt-v2-files-*`,
+   `zt-v2-backups-*` R2 buckets. Do not reuse any old ID.
+4. Put the new D1 UUIDs into `wrangler.v2.jsonc` (`REPLACE_WITH_NEW_*_D1_UUID`), set `RP_ID`/`RP_ORIGIN`
+   to the final domain BEFORE enrolling passkeys, and set the domain/routes.
+5. Choose **Workers Paid** (Free's 10 ms CPU and 100 k writes/day are inadequate for posting batches).
+6. Set secrets — never in files, never in git:
    ```bash
-   npx wrangler secret put SETUP_TOKEN --env staging
-   npx wrangler secret put SESSION_SECRET --env staging
-   npx wrangler secret put DATA_ENCRYPTION_KEY --env staging
-   npx wrangler secret put BACKUP_ENCRYPTION_KEY --env staging
+   npx wrangler secret put SETUP_TOKEN            -c wrangler.v2.jsonc --env staging
+   npx wrangler secret put SESSION_SECRET         -c wrangler.v2.jsonc --env staging
+   npx wrangler secret put DATA_ENCRYPTION_KEY    -c wrangler.v2.jsonc --env staging
+   npx wrangler secret put BACKUP_ENCRYPTION_KEY  -c wrangler.v2.jsonc --env staging
    ```
-   The deploy operator prints `SETUP_TOKEN` **once** to the terminal; `EXPOSE_SETUP_TOKEN` must stay unset.
-6. `npm run build:web` → `npm run d1:staging` → `npm run deploy:staging`.
-7. Only then repeat for production. Real URLs may be reported **only after** an HTTP check.
+   The deploy operator prints `SETUP_TOKEN` **once**; `EXPOSE_SETUP_TOKEN` must stay unset.
+7. `npm run build:web` → `npm run deploy:dryrun` → `wrangler d1 migrations apply ... --remote` →
+   `wrangler deploy -c wrangler.v2.jsonc --env staging`, verify HTTP, then repeat for production.
+   Real URLs may be reported **only after** an HTTP check. Full commands: `docs/NEW_PROJECT_DEPLOY.md`. Alternatively run the `workflow_dispatch` workflow
+`.github/workflows/deploy-v2.yml` from GitHub Actions after adding the repository secrets; it creates only
+`zt-v2-*` resources and has not been executed yet.
 
 ## 5. Backups
 

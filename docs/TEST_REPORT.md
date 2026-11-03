@@ -1,187 +1,186 @@
 # TEST REPORT — 2026-11-03 (Asia/Karachi / UTC+5)
 
-**Every output below is pasted from a command actually run in `/home/user/trade` on branch `arena/e25e3661-trade`.**
-No result is claimed for a command that was not run. Full logs: `.dev/check-all.log`, `.dev/smoke.log`, `.dev/query-plan-report.json`, `.dev/restore-test.db.restore-result.json` (all git-ignored working artifacts).
+**Every output below is pasted from a command actually run in `/home/user/trade` on branch `arena/31aaac0f-trade`.**
+No result is claimed for a command that was not run. Raw logs live in the git-ignored `.dev/` directory
+(`check-all.log`, `e2e-passkeys.log`, `e2e-pin.log`, `a11y.log`, `print-proof.log`, `visual-run1.log`,
+`visual-run2.log`, `lighthouse-final.log`, `wrangler-dryrun-*.log`). Generated reports are committed in `docs/`.
 
-## 1. `npm run check:all` → exit 0 (final run, 2026-11-03 10:13 PKT)
+## 1. `npm run check:all` → exit 0 (final run)
 
-Command chain: `npm run typecheck && npm test && npm run query:plan && npm run build:web`.
+Chain: `npm run typecheck && npm test && npm run query:plan && npm run build:web`.
 
 ```
- Test Files  4 passed (4)
-      Tests  41 passed (41)
+ Test Files  7 passed (7)
+      Tests  54 passed (54)
 15/15 hot queries use an index; 0 full scans.
-✓ built in 2.54s
+✓ 130 modules transformed.
+✓ built in 1.98s
 ```
 
-`npm run typecheck` (`tsc --noEmit -p tsconfig.json`) produced **no output** = 0 errors.
-`npm run build:web`:
+`npm run typecheck` produced no output = 0 errors. Test files: `unit.test.ts` (14),
+`integration.test.ts` (19), `routes.test.ts` (4), `pin.test.ts` (4), `passkeys.test.ts` (4),
+`security-gates.test.ts` (4), `app-security.test.ts` (5) = **54 tests**.
+
+## 2. App-wide security gates (real Worker + real SQL)
 
 ```
-vite v6.4.5 building for production...
-transforming...
-✓ 109 modules transformed.
-rendering chunks...
-computing gzip size...
-dist/index.html                   1.18 kB │ gzip:  0.59 kB
-dist/assets/index-DrWZs_56.css   20.47 kB │ gzip:  4.87 kB
-dist/assets/query-Bd7GYjYy.js    33.35 kB │ gzip: 10.00 kB
-dist/assets/react-dNny9HmG.js   166.35 kB │ gzip: 54.33 kB
-dist/assets/index-B20xZ-j5.js   359.30 kB │ gzip: 101.87 kB
-✓ built in 2.54s
+$ npx vitest run --config vitest.config.ts tests/app-security.test.ts
+ ✓ a valid OWNER session WITHOUT the x-csrf-token header gets 403 CSRF_FAILED on all 29 writes
+ ✓ a read-only AUDITOR cannot read user, device, backup or admin-only routes
+ ✓ an unauthenticated caller cannot read any private route (public whitelist only)
+ ✓ SQL injection strings are harmless everywhere
+ ✓ stored XSS never reaches public JSON
+ Test Files  1 passed (1)   Tests  5 passed (5)
 ```
 
-## 2. `npm test` (Vitest 3.2.7, real Worker + real SQL)
+`tests/security-gates.test.ts` adds 4 more: bad Turnstile token → `403 TURNSTILE_FAILED`,
+good/no-secret token → 201, publish/unpublish cache HIT→purge, and A19 (200 public hits,
+`rows_read=1 public_hits=200 cached_hits=199`) plus the 24-route AUDITOR deny matrix.
 
-Four test files: `unit.test.ts` (14), `integration.test.ts` (19), `routes.test.ts` (4), `pin.test.ts` (4).
-
-```
- ✓ tests/pin.test.ts > PIN-derived offline cache encryption > uses at least 310,000 PBKDF2 iterations and a 256-bit AES-GCM key 62ms
- ✓ tests/pin.test.ts > PIN-derived offline cache encryption > round-trips an Urdu role-scoped cache row and never keeps plaintext in the blob 60ms
- ✓ tests/pin.test.ts > PIN-derived offline cache encryption > a different PIN or salt cannot decrypt the cache (verifier check) 169ms
- ✓ tests/pin.test.ts > PIN-derived offline cache encryption > a fresh 12-byte IV per encryption means identical plaintext yields different ciphertext 58ms
- ✓ tests/unit.test.ts > H1 — integer paisa money > parses rupee strings without floats 2ms
- ✓ tests/unit.test.ts > H1 — integer paisa money > formats with Pakistani digit grouping 1ms
- ✓ tests/unit.test.ts > H1 — integer paisa money > sums and multiplies exactly 0ms
- ✓ tests/unit.test.ts > H1 — integer paisa money > allocates landed cost across lines with an exact integer sum 0ms
- ✓ tests/unit.test.ts > H1 — integer paisa money > weighted-average COGS never overstates inventory value 0ms
- ✓ tests/unit.test.ts > H1 — one quantity rule (integer milli-units / grams) > parses and formats milli-units 1ms
- ✓ tests/unit.test.ts > H1 — one quantity rule (integer milli-units / grams) > net weight arithmetic is transparent and integer 0ms
- ✓ tests/unit.test.ts > H1 — one quantity rule (integer milli-units / grams) > maund conversion requires an owner setting, never an assumption 0ms
- ✓ tests/unit.test.ts > H4 — every posting recipe balances > all 14 recipe variants have sum(debit) == sum(credit) 1ms
- ✓ tests/unit.test.ts > H4 — every posting recipe balances > rejects unbalanced and malformed journals 0ms
- ✓ tests/unit.test.ts > H4 — every posting recipe balances > transfer never touches income/expense accounts 1ms
- ✓ tests/unit.test.ts > H4 — every posting recipe balances > document numbering is zero-padded per sequence 0ms
- ✓ tests/unit.test.ts > security primitives > PBKDF2 hashing verifies and rejects wrong passwords 163ms
- ✓ tests/unit.test.ts > security primitives > CNIC column encryption round-trips with AES-GCM 2ms
- ✓ tests/integration.test.ts > A1 setup creates the owner and cannot be re-run 6ms
- ✓ tests/integration.test.ts > H5: unauthenticated and missing-CSRF requests are rejected by the Worker 3ms
- ✓ tests/integration.test.ts > A2 product publish/unpublish appears on and disappears from the public site (cache purged) 19ms
- ✓ tests/integration.test.ts > A3/H6 public JSON never exposes cost, exact stock, supplier, customers or notes 2ms
- ✓ tests/integration.test.ts > A4 CSV import previews without writing, then confirms with duplicate handling 8ms
- ✓ tests/integration.test.ts > A5 purchase partly paid from Meezan: stock up, payable correct, bank balance down 17ms
- ✓ tests/integration.test.ts > A6 credit sale posts COGS at weighted cost; a later receipt adds NO extra revenue 13ms
- ✓ tests/integration.test.ts > A7 expired pesticide batch is hard-blocked; legal sale register is queryable 8ms
- ✓ tests/integration.test.ts > A8 all seven crops: net-weight arithmetic, sale, lot balance and farmer payment are isolated 101ms
- ✓ tests/integration.test.ts > A9 five other goods books post independently with their own stock and profit 32ms
- ✓ tests/integration.test.ts > A10 four money books are separate, transfers are not income/expense, fees are expenses 15ms
- ✓ tests/integration.test.ts > A11 party, book and money-book ledgers agree and statements render from snapshots 6ms
- ✓ tests/integration.test.ts > A12 expense, shop expense and payroll post; duplicate salary is blocked 11ms
- ✓ tests/integration.test.ts > A13 trial balance balances; balance sheet balances; P&L per book is available 6ms
- ✓ tests/integration.test.ts > A17 dashboard totals equal document totals equal party-ledger sums 5ms
- ✓ tests/integration.test.ts > A14 idempotent sync push does not double-post; insufficient stock becomes a CONFLICT 9ms
- ✓ tests/integration.test.ts > A18 usage meter reports D1 reads/writes; encrypted backup is created and integrity passes 32ms
- ✓ tests/integration.test.ts > A20 XSS in product description and enquiry is neutralised; SQL injection strings are harmless 9ms
- ✓ tests/integration.test.ts > A1 (b) a read-only auditor gets 403 on admin APIs (deny-by-default matrix) 115ms
- ✓ tests/routes.test.ts > web route matrix > every public/private GET used by the UI responds without a server error 236ms
- ✓ tests/routes.test.ts > web route matrix > private endpoints deny unauthenticated callers (H5) 175ms
- ✓ tests/routes.test.ts > web route matrix > feature checklist reports INCOMPLETE items rather than claiming everything is done 68ms
- ✓ tests/routes.test.ts > web route matrix > key POST actions the UI invokes are wired and reject malformed input with 4xx 131ms
-
- Test Files  4 passed (4)
-      Tests  41 passed (41)
-   Duration  3.08s (transform 411ms, collect 674ms, tests 1.63s)
-```
-
-**A15 (passkey/revoke), A16 (real Cloudflare staging restore) and A19 (dedicated quota/cache test) are NOT separate passing tests.** See `docs/ACCEPTANCE.md`.
-
-## 3. `npm run query:plan` (EXPLAIN QUERY PLAN CI gate)
+## 3. Browser E2E (real Chromium 153, virtual WebAuthn authenticator)
 
 ```
-PASS  private products keyset
-PASS  public products search
-PASS  documents by date
-PASS  party ledger by date
-PASS  journal P&L by period
-PASS  stock ledger by product
-PASS  daily summary by date
-PASS  sales list by date
-PASS  purchases by book/date
-PASS  account transactions
-PASS  batches FEFO
-PASS  audit by date
-PASS  grain lots by crop
-PASS  sync idempotency lookup
-PASS  receipts by party
+$ npm run e2e:passkeys
+setup: 201 true
+register: 201 verified=true
+passkey_rows: 1
+passkey_login: 200 method=passkey
+auth_me_after_passkey: 200 user=e2e-owner
+revoke: 200 true
+revoked_login: 401 PASSKEY_NOT_FOUND
+password_fallback: 200 true
+A15_E2E_PASS
 
-15/15 hot queries use an index; 0 full scans.
+$ npm run e2e:pin
+enable: OK (PBKDF2 -> AES-GCM, refs/drafts encrypted)
+reload: PinGate shown
+wrong PIN: rejected
+correct PIN: unlocked
+indexedDB rows=4 encrypted=4
+disable: OK
+PIN_E2E_PASS
 ```
 
-The first run failed with `FAIL documents by date / SCAN documents` and `FAIL sales list by date / SCAN sales`; `migrations/0003_hot_path_indexes.sql` was added and the gate now passes. Report: `.dev/query-plan-report.json`.
-
-## 4. Migrations + seed
+## 4. Lighthouse 13.6.0, real mobile run (390×844) — `docs/LIGHTHOUSE_REPORT.md`
 
 ```
-> npm run migrate:local
+$ npm run test:lighthouse
+/                perf=100 a11y=100 seo=100 LCP=0.9 s CLS=0.018 TBT=10 ms
+/products        perf=100 a11y=100 seo=100 LCP=0.9 s CLS=0.041 TBT=0 ms
+/product/:slug   perf=100 a11y=100 seo=100 LCP=0.9 s CLS=0.005 TBT=30 ms
+LIGHTHOUSE_TARGETS_MET: YES
+```
+
+Targets (Part 9.1): Performance ≥ 85, Accessibility ≥ 95, SEO ≥ 95 — all met on all three pages.
+Earlier diagnostic runs scored as low as 55 and showed LCP 6.6 s; the fixes were stable `<h1>` rendering
+before data load, `font-display: optional` with high-priority above-fold font preloads, a stable 75vh
+products container, footer `h3`→`h2`, and contrast/label fixes. Repeated runs show simulated-throttling
+variance on `/products` (90–100) — every recorded final run still met the targets; no score was invented.
+Raw LHR JSON: `.dev/lhr-_.json`, `.dev/lhr-_products.json`, `.dev/lhr-_product__slug.json`.
+Each Lighthouse run creates ONE clearly-named local test product; the local DB is reset afterwards so
+the preview catalogue is **empty**.
+
+## 5. axe-core 4.14 (real run) — `docs/A11Y_REPORT.md`
+
+```
+$ npm run test:a11y
+public-home        violations=0 critical/serious=0 axe_passes=20
+public-products    violations=0 critical/serious=0 axe_passes=22
+public-enquiry     violations=0 critical/serious=0 axe_passes=21
+login              violations=0 critical/serious=0 axe_passes=19
+product-form       violations=0 critical/serious=0 axe_passes=28
+sale-form          violations=0 critical/serious=0 axe_passes=22
+dashboard          violations=0 critical/serious=0 axe_passes=21
+settings           violations=0 critical/serious=0 axe_passes=23
+A11Y_TOTAL_VIOLATIONS: 0
+```
+
+Tags wcag2a/2aa/21a/21aa. Violations found in earlier runs (2 unlabeled textareas,
+2 RangePicker labels, `.chip.success` contrast, a `link-in-text-block` notice link) were fixed in code.
+
+## 6. Visual regression — `docs/VISUAL_REPORT.md`
+
+```
+$ npm run test:visual   # run 1, baselines deleted first
+44 BASELINE WRITTEN
+VISUAL_RESULT: PASS | page_errors=0
+$ npm run test:visual   # run 2, comparison
+VISUAL_RESULT: PASS | page_errors=0
+Result: PASS — all compared screens identical to their baselines
+```
+
+11 pages × 4 viewports (360/390/768/1280) = 44 real Chromium PNG baselines in
+`tests/visual/baselines/`; second run diff = 0 % on every screen, 0 page errors.
+Evidence JPEGs + A4 PDF: `docs/screenshots/`.
+
+## 7. Urdu print / PDF proof — `docs/PRINT_PROOF.md`
+
+```
+$ npm run test:print
+desktop: nastaliq=true naskh=true width=331px -> docs/screenshots/urdu-print-desktop.jpg
+pdf: docs/screenshots/urdu-invoice-proof.pdf
+android-emulated: nastaliq=true naskh=true width=271px -> docs/screenshots/urdu-print-android-emulated.jpg
+PRINT_PROOF: PASS
+```
+
+Both shipped WOFF2 faces load and Urdu renders with non-zero width on desktop and Android-emulated
+Chromium. **INCOMPLETE:** a screenshot from a *physical* Android device was never taken; only emulation.
+
+## 8. Migrations, query plans, restore (unchanged earlier evidence)
+
+```
+$ npm run migrate:local
 applied migrations/0001_init.sql
 applied migrations/0002_system_seed.sql
 applied migrations/0003_hot_path_indexes.sql
-OK — 76 tables in /home/user/trade/.dev/zt.db
+applied migrations/0004_webauthn.sql
+OK — 77 tables in /home/user/trade/.dev/zt.db
 ```
 
-`npm run seed:generate` → `Generated migrations/0002_system_seed.sql with 417 statements.`
-In-memory FK-on apply of all migrations succeeds; `0002` seeds 67 chart-of-accounts rows and 30 settings, **zero products**, `setup_complete=false`, `maund_kg=null`.
+`npm run seed:generate` → `417 statements`. `npm run query:plan` → `15/15 hot queries use an index; 0 full scans.`
+Local staging-equivalent restore: `DECRYPT OK 35014 -> 294897 bytes`, 1032 rows / 48 tables,
+`RESTORE + INTEGRITY PASS`, FK PASS, debit = credit = 97939267 paisa. A restore on a **real Cloudflare
+staging D1** is still INCOMPLETE.
 
-## 5. Local preview HTTP smoke (`npm run server`, port 3000)
-
-```
-/                                          200 1175B
-/erp                                       200 1175B
-/api/v1/health                             200 120B
-/api/v1/public/home                        200 2321B
-/api/v1/setup/status                       200 752B
-/api/v1/auth/me                            401 149B
-/manifest.webmanifest                      200 680B
-/sw.js                                     200 3265B
-/fonts/nastaliq-700.woff2                  200 157608B
-/assets/index-B20xZ-j5.js                  200 359300B
-/sitemap.xml                               200 1714B
-/robots.txt                                200 99B
-/some/unknown/page                         200 1175B
---- features summary ---
-features 60 {"COMPLETE":33,"PARTIAL":22,"INCOMPLETE":5}
---- private API without session ---
-{"ok":false,"error":{"code":"UNAUTHENTICATED","message_ur":"براہِ کرم دوبارہ لاگ ان کریں","message_en":"Please log in again"}}
-```
-
-`/api/v1/health` body: `{"ok":true,"data":{"service":"zeeshan-traders","at":"2026-11-03T09:50:12.735Z","runtime":"local-preview (node:sqlite)"}}`
-
-The unknown non-API path returns the SPA shell (200) — intentional client-side 404. Unknown `/api/*` returns a JSON 404.
-
-## 6. Encrypted backup → restore (local staging-equivalent)
+## 9. New-project Wrangler config — validated, NOT deployed
 
 ```
-> npx tsx scripts/restore.ts --file .test-backups/backups/01M6GDAEH1KFCE30SKAC9G4J1H.ztbak --key "$KEY" --verify-only
-DECRYPT OK: 35014 bytes -> 294897 bytes NDJSON, 1032 rows, 48 tables
-VERIFY-ONLY: decrypt + parse OK (no database written)
-
-> npx tsx scripts/restore.ts --file ... --target .dev/restore-test.db --i-know-this-is-staging
-DECRYPT OK: 35014 bytes -> 294897 bytes NDJSON, 1032 rows, 48 tables
-RESTORE + INTEGRITY PASS: {
-  "restored_rows": 1032,
-  "restored_tables": 48,
-  "database_tables": 76,
-  "foreign_key_check": "PASS",
-  "journal_balanced": true,
-  "debit_paisa": 97939267,
-  "credit_paisa": 97939267,
-  "at": "2026-11-03T09:55:05.752Z"
-}
+$ npm run deploy:dryrun
+$ npx wrangler deploy --dry-run -c wrangler.v2.jsonc --env staging
+Total Upload: 1340.52 KiB / gzip: 244.44 KiB   → exit 0, 0 warnings
+$ npx wrangler deploy --dry-run -c wrangler.v2.jsonc --env production
+Total Upload: 1340.52 KiB / gzip: 244.44 KiB   → exit 0, 0 warnings
 ```
 
-This is a **local** staging-equivalent restore. A restore on a real Cloudflare staging D1 database is **INCOMPLETE** (no Cloudflare access), so `staging_restore_result` in `backup_logs` remains `NOT_TESTED` for production purposes.
+`wrangler.v2.jsonc` uses only NEW resource names (`zt-v2-*`); the old `wrangler.jsonc` is untouched.
+No Account ID, API token or R2 key is stored in Git.
 
-## 7. NOT RUN / NO EVIDENCE (honest gaps)
+Real deploy attempt (after the push, 12:53 PKT):
+```
+$ curl ... https://api.cloudflare.com/client/v4/
+curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL ... / http=000
+$ curl ... https://registry.npmjs.org/  -> http=200
+$ env | grep -c '^CLOUDFLARE_'  -> 0
+$ CI=1 npx wrangler deploy -c wrangler.v2.jsonc --env staging
+✘ [ERROR] In a non-interactive environment, it's necessary to set a CLOUDFLARE_API_TOKEN ...
+deploy_exit=1
+```
+A `workflow_dispatch` deploy workflow (`.github/workflows/deploy-v2.yml`, YAML parsed OK, 14 steps) was
+added for the owner to run from GitHub Actions with repository secrets. It has NOT run. No D1/R2 created,
+no remote migration, no deploy, no live URL. See `docs/NEW_PROJECT_DEPLOY.md`.
 
-| Gate | Status | Why |
-|---|---|---|
-| Playwright visual regression at 360 / 390 / 768 / 1280 | **INCOMPLETE** | `@playwright/test` and browser binaries are not installed in this sandbox; `playwright.config.ts` + `tests/visual/erp.spec.ts` exist but were never executed. No baseline screenshots exist. |
-| Lighthouse CI | **INCOMPLETE** | `lighthouserc.json` + workflow exist; no Lighthouse run performed. |
-| Urdu PDF screenshots on Android Chrome + desktop Chrome | **INCOMPLETE** | No browser/emulator available. Print templates are browser-rendered HTML+CSS but have not been screenshot-verified. |
-| a11y automated (axe) | **INCOMPLETE** | Manual semantic labels/logical properties only. |
-| Cloudflare D1 apply, R2 binding, staging + production deploy | **INCOMPLETE** | No Cloudflare account / domain / D1 UUID supplied; `wrangler.jsonc` has placeholders. |
-| WebAuthn passkeys / A15 | **INCOMPLETE** | Server returns `501 INCOMPLETE_PASSKEYS`. |
-| PIN-derived AES-GCM cache encryption | **COMPLETE (unit-tested)** | `offline-security.tsx` + `pin-crypto.ts`, 4 passing unit tests; **browser E2E of the unlock screen is INCOMPLETE**. |
-| Real URLs | **NONE** | Only the Arena live preview of the local server exists; no verified production URL may be claimed. |
+## 10. Live feature endpoint
 
-**Screenshots:** none were produced. This report deliberately does not include fabricated images.
+```
+$ npm run docs:features
+FEATURES_DOC_OK: 64 items {"COMPLETE":43,"PARTIAL":20,"INCOMPLETE":1} -> docs/FEATURE_CHECKLIST.md
+```
+Only `P12-DEPLOY` is INCOMPLETE. 20 items remain explicitly PARTIAL — see `docs/KNOWN_LIMITATIONS.md`.
+
+## 11. NOT RUN / NO EVIDENCE (honest gaps)
+
+Real Cloudflare deploy + verified URLs; real Cloudflare Turnstile `siteverify`; real Cloudflare edge
+Cache API purge; real CF staging restore; production R2 binding; a physical Android Chrome screenshot;
+nightly encrypted backup on a live R2 bucket; 13 phase-by-phase `Phase n done: <evidence>` commits;
+re-verification of Cloudflare prices/limits and Punjab regulatory facts (the sandbox only permits
+github.com / npm / pypi). Local preview is NOT a production URL. **Do not claim 100 % or A1–A20 all PASS.**

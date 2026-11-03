@@ -3,9 +3,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from './app-state.js';
 import { api } from './api.js';
-import { Button, TextField, CheckField, Chip, Skeleton, Sheet, IncompleteBadge, OfflineBanner } from './components.js';
+import { Button, TextField, CheckField, Chip, Skeleton, Sheet, OfflineBanner } from './components.js';
 import { usePinState, PinGate, lockPin } from './offline-security.js';
 import { BOOKS, MONEY_ACCOUNTS } from '@zt/shared';
+import { passkeysSupported, loginWithPasskey } from './passkeys.js';
 import {
   Dashboard, GenericList, ProductForm, ProductImport, HubScreen, CropPage, KhataCentre,
   PartyKhata, ReportsGallery, DocumentsCentre, SyncCentre, BackupScreen, SettingsScreen,
@@ -174,6 +175,7 @@ function Login() {
   const nav = useNavigate();
   const [username, setUsername] = useState(''), [password, setPassword] = useState('');
   const [show, setShow] = useState(false), [busy, setBusy] = useState(false), [err, setErr] = useState('');
+  const [pkBusy, setPkBusy] = useState(false);
   useEffect(() => { if (setupStatus && !setupStatus.setup_complete) nav('/erp/setup'); }, [setupStatus]);
   const submit = async (e: React.FormEvent) => {
     e.preventDefault(); setBusy(true); setErr('');
@@ -192,7 +194,15 @@ function Login() {
       <CheckField label="پاس ورڈ دکھائیں" checked={show} onChange={setShow} />
       {err && <div className="err" role="alert">⚠ {err}</div>}
       <Button type="submit" loading={busy} className="btn-block">لاگ ان</Button>
-      <div className="small" style={{ marginBlockStart: 12 }}>فنگر پرنٹ / پاس کی <IncompleteBadge note="WebAuthn passkeys are INCOMPLETE in this build" /></div>
+      {passkeysSupported() && <Button type="button" variant="secondary" className="btn-block" loading={pkBusy}
+        onClick={async () => {
+          setPkBusy(true); setErr('');
+          try { await loginWithPasskey(); await reloadSession(); nav('/erp'); }
+          catch (e: any) { setErr(e.message_ur ?? String(e)); }
+          finally { setPkBusy(false); }
+        }}>🔑 فنگر پرنٹ / پاس کی سے لاگ ان</Button>}
+      <div className="notice info small" style={{ marginBlockStart: 8 }}>پاس کی ڈیوائس کے اپنے بائیو میٹرک سے چیلنج پر دستخط کرتی ہے؛
+        فنگر پرنٹ کبھی ویب سائٹ یا سرور تک نہیں پہنچتا۔ ڈومین تبدیل ہونے سے پہلے پاس کی رجسٹر کریں (RP ID ڈومین سے بندھا ہے)۔</div>
       {setupStatus?.local_preview && <div className="notice small">مقامی پیش نظارہ: سیٹ اپ ٹوکن سرور لاگ اور <code>/api/v1/setup/status</code> میں موجود ہے۔</div>}
     </form>
   </div>;

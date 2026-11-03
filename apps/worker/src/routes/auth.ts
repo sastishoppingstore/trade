@@ -145,9 +145,7 @@ export function registerAuth(app: H) {
     return ok(c, { user, business, setup_complete: await setupComplete(db), permissions: user.permissions });
   }));
 
-  // WebAuthn passkeys: schema + UI exist; browser-side registration/login is NOT implemented.
-  app.all('/api/v1/auth/passkey/*', (c) => handle(c, () =>
-    fail(c, 501, 'INCOMPLETE_PASSKEYS', 'پاس کی / فنگر پرنٹ لاگ ان ابھی مکمل نہیں ہے (INCOMPLETE)', 'WebAuthn passkeys are INCOMPLETE in this build', {})));
+  // WebAuthn passkey routes are registered by registerPasskeys() in app.ts.
 
   app.get('/api/v1/roles', requirePerm('users.read'), (c) => handle(c, async () => {
     const db = c.get('db')!;

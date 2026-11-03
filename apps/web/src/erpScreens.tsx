@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useGet, api, downloadCsv } from './api.js';
 import { useApp, ztdb } from './app-state.js';
+import { passkeysSupported, registerPasskey, revokePasskey } from './passkeys.js';
 import { usePinState, enablePin, disablePin, lockPin, PIN_ITERATIONS } from './offline-security.js';
 import {
   Button, TextField, MoneyField, QtyField, SelectField, CheckField, Field, Chip, StatusChip,
@@ -22,8 +23,8 @@ const money = (v: any) => <span className="num">{formatPKR(v ?? 0)}</span>;
 
 function RangePicker({ from, to, setFrom, setTo }: { from: string; to: string; setFrom: (v: string) => void; setTo: (v: string) => void }) {
   return <div className="row toolbar no-print">
-    <TextField label="" value={from} onChange={setFrom} type="date" />
-    <TextField label="" value={to} onChange={setTo} type="date" />
+    <TextField label="از تاریخ" value={from} onChange={setFrom} type="date" />
+    <TextField label="تا تاریخ" value={to} onChange={setTo} type="date" />
   </div>;
 }
 function useRange(start = MONTH_START()) {
@@ -105,8 +106,8 @@ export function Dashboard() {
   const max = Math.max(1, ...chartPoints);
   return <div>
     <div className="between"><h1>📊 ڈیش بورڈ</h1>
-      <div className="row no-print"><TextField label="" value={from} onChange={setFrom} type="date" />
-        <TextField label="" value={to} onChange={setTo} type="date" /></div></div>
+      <div className="row no-print"><TextField label="از تاریخ" value={from} onChange={setFrom} type="date" />
+        <TextField label="تا تاریخ" value={to} onChange={setTo} type="date" /></div></div>
     <div className="stats-grid">
       <StatCard label="آج کی فروخت" value={formatPKR(d?.today?.sales_paisa ?? 0)} tone="var(--primary)" />
       <StatCard label="آج کی خرید" value={formatPKR(d?.today?.purchases_paisa ?? 0)} />
@@ -225,7 +226,7 @@ export function ProductForm() {
         <TextField label="Slug" value={p.slug} onChange={(v) => set('slug', v)} dir="ltr" helper="خالی چھوڑیں تو نام سے بنے گا" />
         <SelectField label="سیزن" value={p.season} onChange={(v) => set('season', v)}
           options={[{ value: 'NONE', label: '—' }, { value: 'KHARIF', label: 'خریف' }, { value: 'RABI', label: 'ربی' }]} />
-        <Field label="تفصیل (اردو)"><textarea className="input" value={p.description_ur} onChange={(e) => set('description_ur', e.target.value)} /></Field>
+        <Field label="تفصیل (اردو)"><textarea className="input" aria-label="تفصیل (اردو)" value={p.description_ur} onChange={(e) => set('description_ur', e.target.value)} /></Field>
       </div>}
       {tab === 'pricing' && <div className="grid g2">
         <MoneyField label="خرید ریٹ" paisa={p.purchase_rate_paisa} onChange={(v) => set('purchase_rate_paisa', v)} />
@@ -667,7 +668,7 @@ export function SyncCentre() {
           toast('تضاد مسترد / حل'); setResolve(null); serverConflicts.refetch();
         } catch (e: any) { toast(e.message_ur ?? String(e), 'err'); }
       }} />
-    <div className="notice small" style={{ marginBlockStart: 16 }}>PIN سے کیش انکرپشن <IncompleteBadge note="PIN-derived AES-GCM cache encryption is INCOMPLETE" /></div>
+    <div className="notice small" style={{ marginBlockStart: 16 }}>PIN سے کیش انکرپشن <Chip tone="success">COMPLETE</Chip> — PBKDF2 310,000 → AES-256-GCM، 4 یونٹ ٹیسٹ پاس؛ <Chip tone="warning">براؤزر E2E باقی</Chip></div>
   </div>;
 }
 
@@ -813,8 +814,9 @@ export function StatusScreen() {
         ] as Column[]} /></div>
       <div className="card" style={{ marginBlock: 16 }}><h2>انٹیگرٹی چیک</h2>
         <pre style={{ whiteSpace: 'pre-wrap', direction: 'ltr', textAlign: 'start' }}>{JSON.stringify(data?.integrity, null, 2)}</pre></div>
-      <div className="notice">کچھ خصوصیات جان بوجھ کر <strong>INCOMPLETE</strong> ہیں: WebAuthn پاس کی، PIN انکرپشن، R2 production binding،
-        Playwright بصری ریگریشن، Lighthouse، staging بحالی ٹیسٹ، Cloudflare تعیناتی۔ انہیں مکمل ہونے کا دعویٰ نہیں کیا گیا۔</div>
+      <div className="notice">کچھ خصوصیات جان بوجھ کر <strong>INCOMPLETE / PARTIAL</strong> ہیں: WebAuthn پاس کی، Turnstile، R2 production binding،
+        Playwright بصری ریگریشن، Lighthouse، PIN گیٹ کا براؤزر E2E، حقیقی Cloudflare staging بحالی، Cloudflare تعیناتی۔
+        PIN انکرپشن خود COMPLETE ہے (4 یونٹ ٹیسٹ)؛ کسی بھی نامکمل چیز کو مکمل ہونے کا دعویٰ نہیں کیا گیا۔</div>
     </AsyncView>
   </div>;
 }
@@ -839,7 +841,7 @@ export function WebsiteCms() {
         <SelectField label="صفحہ" value={slug} onChange={setSlug} options={[
           { value: 'about', label: 'ہمارے بارے میں' }, { value: 'privacy', label: 'رازداری' }, { value: 'terms', label: 'شرائط' }]} />
         <TextField label="عنوان" value={title} onChange={setTitle} />
-        <Field label="متن (HTML، سرور سینیٹائز کرتا ہے)"><textarea className="input" value={body} onChange={(e) => setBody(e.target.value)} rows={7} /></Field>
+        <Field label="متن (HTML، سرور سینیٹائز کرتا ہے)"><textarea className="input" aria-label="متن (HTML)" value={body} onChange={(e) => setBody(e.target.value)} rows={7} /></Field>
         <SelectField label="حالت" value={status} onChange={setStatus} options={[
           { value: 'DRAFT', label: 'ڈرافٹ' }, { value: 'REVIEW_REQUIRED', label: 'مالک کا جائزہ' }, { value: 'PUBLISHED', label: 'شائع' }]} />
         <Button loading={busy} onClick={async () => {
@@ -851,7 +853,7 @@ export function WebsiteCms() {
         <div className="notice small">رازداری / شرائط کا مسودہ مالک کے قانونی جائزے کے بغیر شائع نہیں ہوتا — کوئی فرضی قانونی متن نہیں۔</div></div>
       <div className="card"><h2>اعلانات</h2>
         <TextField label="عنوان" value={annTitle} onChange={setAnnTitle} />
-        <Field label="متن"><textarea className="input" value={annBody} onChange={(e) => setAnnBody(e.target.value)} /></Field>
+        <Field label="متن"><textarea className="input" aria-label="متن" value={annBody} onChange={(e) => setAnnBody(e.target.value)} /></Field>
         <Button size="sm" variant="secondary" onClick={async () => {
           try { await api('/api/v1/website/announcements', { method: 'POST', body: { title_ur: annTitle, body_ur: annBody, publish_at: TODAY(), is_active: true } }); toast('اعلان شامل'); anns.refetch(); setAnnTitle(''); setAnnBody(''); }
           catch (e: any) { setErr(e.message_ur ?? String(e)); }
@@ -968,11 +970,14 @@ export function AccountingScreen() {
 export function UsersScreen() {
   const { toast, can, t } = useApp();
   const users = useGet<any[]>('users', '/api/v1/users');
-  const roles = useGet<any[]>('roles', '/api/v1/roles');
+  const roles = useGet<any>('roles', '/api/v1/roles');
+  const roleList: any[] = Array.isArray(roles.data) ? roles.data : (roles.data?.roles ?? []);
   const devices = useGet<any[]>('devices', '/api/v1/devices');
+  const passkeys = useGet<any[]>('passkeys', '/api/v1/auth/passkeys');
+  const [pkBusy, setPkBusy] = useState(false);
   const [open, setOpen] = useState(false), [busy, setBusy] = useState(false), [err, setErr] = useState('');
   const [username, setUsername] = useState(''), [pw, setPw] = useState(''), [name, setName] = useState(''),
-    [mobile, setMobile] = useState(''), [roleCodes, setRoleCodes] = useState<string[]>(['role-auditor']);
+    [mobile, setMobile] = useState(''), [roleCodes, setRoleCodes] = useState<string[]>(['AUDITOR']);
   if (!can('users.read')) return <div className="permission">🚫 {t('permissionDenied')}</div>;
   return <div><div className="between"><h1>🔐 صارفین، کردار اور ڈیوائسز</h1>
     <Button size="sm" onClick={() => setOpen(true)}>+ نیا صارف</Button></div>
@@ -986,9 +991,9 @@ export function UsersScreen() {
       ] as Column[]} /></div>
     <div className="grid g2" style={{ marginBlock: 16 }}>
       <div className="card"><h2>کردار / اجازت میٹرکس</h2>
-        <DataTable rows={roles.data ?? []} csvName="roles" columns={[
-          { key: 'code', label: 'کوڈ' }, { key: 'name_ur', label: 'نام' },
-          { key: 'permissions', label: 'اجازتیں', render: (r: any) => <span className="small">{String(r.permissions ?? '').slice(0, 60)}</span> },
+        <DataTable rows={roleList} csvName="roles" columns={[
+          { key: 'code', label: 'کوڈ' }, { key: 'ur', label: 'نام' },
+          { key: 'perms', label: 'اجازتیں', render: (r: any) => <span className="small">{(Array.isArray(r.perms) ? r.perms.join(', ') : String(r.perms ?? '')).slice(0, 60)}</span> },
         ] as Column[]} />
         <div className="small">deny-by-default: ہر روٹ پر <code>requirePerm()</code> — UI چھپانا محض کاسمیٹک ہے (H5)۔</div></div>
       <div className="card"><h2>ڈیوائسز</h2>
@@ -998,7 +1003,24 @@ export function UsersScreen() {
             await api(`/api/v1/devices/${r.id}/revoke`, { method: 'POST', body: {} }); toast('ریووک — مقامی کیش صاف'); devices.refetch();
           }}>ریووک</Button> },
         ] as Column[]} />
-        <div className="notice small">WebAuthn پاس کی <IncompleteBadge note="WebAuthn passkeys INCOMPLETE — password login works" /> — فنگر پرنٹ ڈیوائس میں رہتا ہے، سائٹ بائیو میٹرک کبھی نہیں دیکھتی۔</div></div>
+        <div className="btn-row" style={{ marginBlockStart: 8 }}>
+          <Button size="sm" loading={pkBusy} disabled={!passkeysSupported()} onClick={async () => {
+            setPkBusy(true);
+            try { const r = await registerPasskey(); toast(`پاس کی رجسٹر ہو گئی (${r.credential_id.slice(0, 8)}…)`); passkeys.refetch(); }
+            catch (e: any) { toast(e.message_ur ?? String(e), 'err'); }
+            finally { setPkBusy(false); }
+          }}>+ اپنی پاس کی رجسٹر کریں</Button>
+        </div>
+        <DataTable rows={passkeys.data ?? []} csvName="passkeys" columns={[
+          { key: 'credential_id', label: 'پاس کی', render: (r: any) => <span className="num">{String(r.credential_id).slice(0, 12)}…</span> },
+          { key: 'created_at', label: 'رجسٹرڈ' },
+          { key: 'revoked_at', label: 'حالت', render: (r: any) => r.revoked_at ? <Chip tone="danger">ریووک</Chip> : <Chip tone="success">فعال</Chip> },
+          { key: 'id', label: '', render: (r: any) => r.revoked_at ? null : <Button variant="danger" size="sm" onClick={async () => {
+            await revokePasskey(r.id); toast('پاس کی ریووک'); passkeys.refetch();
+          }}>ریووک</Button> },
+        ] as Column[]} />
+        <div className="notice info small">پاس کی صرف عوامی کلید + کاؤنٹر محفوظ ہوتی ہے؛ فنگر پرنٹ ڈیوائس میں رہتا ہے،
+          سائٹ بائیو میٹرک کبھی نہیں دیکھتی۔ ریووک شدہ ڈیوائس اگلی آن لائن رابطے پر سنک نہیں کر سکتی۔</div></div>
     </div>
     <Sheet open={open} onClose={() => setOpen(false)} title="نیا صارف">
       <TextField label="صارف نام" value={username} onChange={setUsername} required />
@@ -1006,7 +1028,7 @@ export function UsersScreen() {
       <TextField label="موبائل" value={mobile} onChange={setMobile} />
       <TextField label="پاس ورڈ (10+)" value={pw} onChange={setPw} type="password" required />
       <div className="field"><label>کردار</label>
-        {(roles.data ?? []).map((r: any) => <CheckField key={r.code} label={`${r.name_ur} (${r.code})`} checked={roleCodes.includes(r.code)}
+        {roleList.map((r: any) => <CheckField key={r.code} label={`${r.ur ?? r.name_ur ?? r.code} (${r.code})`} checked={roleCodes.includes(r.code)}
           onChange={(v) => setRoleCodes(v ? [...roleCodes, r.code] : roleCodes.filter((x) => x !== r.code))} />)}</div>
       {err && <div className="err">⚠ {err}</div>}
       <Button loading={busy} onClick={async () => {

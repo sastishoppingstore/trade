@@ -71,9 +71,15 @@ describe('web route matrix (real Worker + real SQL)', () => {
     expect(r.status).toBe(200);
     const f = r.json.data.features as { id: string; state: string }[];
     expect(f.length).toBeGreaterThanOrEqual(45);
-    for (const id of ['P8-PASSKEYS', 'P8-TURNSTILE', 'P9-VISUAL', 'P9-LIGHTHOUSE', 'P12-DEPLOY']) {
+    // Deployment is the only remaining INCOMPLETE feature: everything else is
+    // COMPLETE or explicitly PARTIAL (never falsely reported as COMPLETE).
+    for (const id of ['P12-DEPLOY']) {
       expect(f.find((x) => x.id === id)?.state, id).toBe('INCOMPLETE');
     }
+    for (const id of ['P8-PASSKEYS', 'P9-VISUAL', 'P9-LIGHTHOUSE', 'P9-A11Y', 'P8-PIN']) {
+      expect(f.find((x) => x.id === id)?.state, id).toBe('COMPLETE');
+    }
+    expect(f.some((x) => x.state === 'PARTIAL')).toBe(true);
   });
 
   it('key POST actions the UI invokes are wired and reject malformed input with 4xx', async () => {

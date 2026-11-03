@@ -19,6 +19,13 @@ export interface AppEnv {
   BACKUP_ENCRYPTION_KEY?: string;
   SETUP_TOKEN?: string;
   TURNSTILE_SECRET?: string;
+  TURNSTILE_SITEKEY?: string;
+  TURNSTILE_VERIFY_URL?: string;
+  RP_ID?: string;
+  RP_ORIGIN?: string;
+  RP_NAME?: string;
+  /** Test-only injection so the Turnstile gate can be verified without Cloudflare network access. */
+  __ZT_TURNSTILE_VERIFY__?: (token: string, ip: string) => Promise<boolean>;
   EXPOSE_SETUP_TOKEN?: string;
   LOCAL_PREVIEW?: string;
   __ZT_SQLITE__?: DatabaseSync;
@@ -287,11 +294,18 @@ export async function encryptCnic(c: AppContext, cnic?: string): Promise<string 
 
 // ---------------------------------- Cache -----------------------------------
 const memoryCache = new Map<string, { expires: number; body: string }>();
+/** Every key written in this isolate, so purge works on the edge Cache API too (which has no prefix delete). */
+const knownCacheKeys = new Set<string>();
+/** Bumped on every publish/unpublish: old keys can never be served again, even from a stale isolate. */
+let cacheGeneration = 0;
+const cacheUrl = (full: string) => `https://zt-cache.invalid/${encodeURIComponent(full)}`;
+const fullKey = (key: string) => `zt-public:v${cacheGeneration}:${key}`;
+
 export async function cacheRead(c: AppContext, key: string): Promise<string | null> {
-  const full = `zt-public:${key}`;
+  const full = fullKey(key);
   const cache = (globalThis as any).caches?.default;
   if (cache) {
-    const res = await cache.match(new Request(`https://zt-cache.invalid/${encodeURIComponent(full)}`));
+    const res = await cache.match(new Request(cacheUrl(full)));
     if (res) return res.text();
     return null;
   }
@@ -301,24 +315,48 @@ export async function cacheRead(c: AppContext, key: string): Promise<string | nu
   return null;
 }
 export async function cacheWrite(c: AppContext, key: string, body: string, ttlSeconds: number): Promise<void> {
-  const full = `zt-public:${key}`;
+  const full = fullKey(key);
+  knownCacheKeys.add(full);
   const cache = (globalThis as any).caches?.default;
   if (cache) {
     await cache.put(
-      new Request(`https://zt-cache.invalid/${encodeURIComponent(full)}`),
+      new Request(cacheUrl(full)),
       new Response(body, { headers: { 'Cache-Control': `public, max-age=${ttlSeconds}`, 'Content-Type': 'application/json' } }),
     );
     return;
   }
   memoryCache.set(full, { expires: Date.now() + ttlSeconds * 1000, body });
 }
+/** Invalidate ALL public catalogue/CMS cache entries after any publish/unpublish/CMS change. */
 export async function purgePublicCache(): Promise<void> {
   const cache = (globalThis as any).caches?.default;
   if (cache) {
-    // Cache API has no prefix delete; keys are known to this module.
-    for (const key of memoryCache.keys()) await cache.delete(new Request(`https://zt-cache.invalid/${encodeURIComponent(key)}`));
+    for (const full of knownCacheKeys) {
+      try { await cache.delete(new Request(cacheUrl(full))); } catch { /* best effort per key */ }
+    }
   }
   memoryCache.clear();
+  knownCacheKeys.clear();
+  cacheGeneration += 1; // logical invalidation: old keys cannot be re-read even by another isolate
+}
+
+/** Optional Cloudflare Turnstile verification for the public enquiry form (Part 2.3 / 8.2).
+ *  When TURNSTILE_SECRET is absent the feature is off and honeypot + time-trap still apply.
+ *  Tests inject __ZT_TURNSTILE_VERIFY__ because this sandbox cannot reach Cloudflare's API. */
+export async function verifyTurnstile(c: AppContext, token: string): Promise<boolean> {
+  if (!c.env.TURNSTILE_SECRET) return true;
+  if (!token) return false;
+  if (c.env.__ZT_TURNSTILE_VERIFY__) return c.env.__ZT_TURNSTILE_VERIFY__(token, clientIp(c));
+  const url = c.env.TURNSTILE_VERIFY_URL ?? 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ secret: c.env.TURNSTILE_SECRET, response: token, remoteip: clientIp(c) }),
+    });
+    const json = await res.json() as { success?: boolean };
+    return json?.success === true;
+  } catch { return false; }
 }
 
 // --------------------------------- Pagination -------------------------------
