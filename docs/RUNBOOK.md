@@ -73,7 +73,8 @@ Cron (19:00 UTC = 00:00 PKT) runs integrity, encrypted backup, cleanup and notif
    `wrangler deploy -c wrangler.v2.jsonc --env staging`, verify HTTP, then repeat for production.
    Real URLs may be reported **only after** an HTTP check. Full commands: `docs/NEW_PROJECT_DEPLOY.md`. Alternatively run the `workflow_dispatch` workflow
 `.github/workflows/deploy-v2.yml` from GitHub Actions after adding the repository secrets; it creates only
-`zt-v2-*` resources and has not been executed yet.
+`zt-v2-*` resources. One real dispatch (run `41641152183`) failed at the secret guard; re-run after adding
+the secrets.
 
 ## 5. Backups
 

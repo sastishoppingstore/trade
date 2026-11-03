@@ -26,8 +26,11 @@ Anything unfinished is labelled `INCOMPLETE` or `PARTIAL` in `/erp/status` (`GET
    (`In a non-interactive environment, it's necessary to set a CLOUDFLARE_API_TOKEN ...`; 0 credential
    env vars present). Outbound is limited to github.com / npm / pypi, so `d1 create`, `r2 bucket create`,
    `secret put` and `deploy` cannot complete here. A safe `workflow_dispatch` workflow
-   (`.github/workflows/deploy-v2.yml`) was added so the owner can deploy from GitHub Actions using
-   repository secrets; it has **NOT been run**. Commands: `docs/NEW_PROJECT_DEPLOY.md`.
+   (`.github/workflows/deploy-v2.yml`) was added, merged to `main` via PR #2 and **actually dispatched**
+   (run `https://github.com/sastishoppingstore/trade/actions/runs/41641152183`, conclusion `failure`).
+   It stopped at the guard because the six repository secrets are absent; `gh secret list` here returns
+   HTTP 403, so only the owner can add them. No Cloudflare resource or URL exists. Commands:
+   `docs/NEW_PROJECT_DEPLOY.md`.
 3. **Domain / RP ID** — deferred by the owner. WebAuthn credentials are domain-bound, so passkeys must
    be enrolled only after the final domain is set.
 4. **Real Cloudflare Turnstile `siteverify`** — the server gate is implemented and unit-tested with an
