@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.dev/
+*.local
+.env
+.dev.vars
+.DS_Store
+.wrangler/
+coverage/
+playwright-report/
+test-results/
+*.log
+!.gitkeep
+.test-backups/
