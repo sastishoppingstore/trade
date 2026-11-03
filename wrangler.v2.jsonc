@@ -43,6 +43,8 @@
   "env": {
     "staging": {
       "name": "zt-v2-staging",
+      // Owner wants the FREE *.workers.dev domain first; custom domain links later.
+      "workers_dev": true,
       "vars": { "ENVIRONMENT": "staging", "DEFAULT_LANG": "ur", "TIMEZONE": "Asia/Karachi", "CURRENCY": "PKR" },
       "d1_databases": [
         { "binding": "DB", "database_name": "zt-v2-staging", "database_id": "REPLACE_WITH_NEW_STAGING_D1_UUID", "migrations_dir": "migrations" }
@@ -53,6 +55,7 @@
     },
     "production": {
       "name": "zt-v2",
+      "workers_dev": true,
       "vars": { "ENVIRONMENT": "production", "DEFAULT_LANG": "ur", "TIMEZONE": "Asia/Karachi", "CURRENCY": "PKR" },
       "d1_databases": [
         { "binding": "DB", "database_name": "zt-v2-production", "database_id": "REPLACE_WITH_NEW_PRODUCTION_D1_UUID", "migrations_dir": "migrations" }
