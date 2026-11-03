@@ -8,12 +8,14 @@ import { registerTransactions } from './routes/transactions.js';
 import { registerReports } from './routes/reports.js';
 import { registerWebsite } from './routes/website.js';
 import { registerOps } from './routes/ops.js';
+import { registerPasskeys } from './routes/passkeys.js';
 
 type H = Hono<{ Bindings: AppEnv; Variables: AppVars }>;
 
 const PUBLIC_PATHS = [
   '/api/v1/setup', '/api/v1/setup/status', '/api/v1/auth/login',
   '/api/v1/health', '/api/v1/features',
+  '/api/v1/auth/passkey/authenticate/options', '/api/v1/auth/passkey/authenticate/verify',
 ];
 
 function securityHeaders(c: any) {
@@ -64,6 +66,7 @@ export function createApp(): H {
     runtime: c.env.__ZT_SQLITE__ ? 'local-preview (node:sqlite)' : 'cloudflare-worker' } }));
 
   registerAuth(app);
+  registerPasskeys(app);
   registerCatalogue(app);
   registerTransactions(app);
   registerReports(app);

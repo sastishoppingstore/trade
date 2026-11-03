@@ -24,13 +24,24 @@
     "seed:generate": "tsx scripts/gen-seed.ts",
     "query:plan": "tsx scripts/check-query-plans.ts",
     "restore": "tsx scripts/restore.ts",
-    "check:all": "npm run typecheck && npm test && npm run query:plan && npm run build:web"
+    "check:all": "npm run typecheck && npm test && npm run query:plan && npm run build:web",
+    "e2e:passkeys": "node scripts/e2e-passkeys.mjs",
+    "e2e:pin": "node scripts/e2e-pin.mjs",
+    "test:visual": "node scripts/visual-baselines.mjs",
+    "test:lighthouse": "node scripts/lighthouse.mjs",
+    "test:a11y": "node scripts/a11y.mjs",
+    "test:print": "node scripts/print-proof.mjs",
+    "test:browser": "npm run e2e:passkeys && npm run e2e:pin && npm run test:visual && npm run test:a11y && npm run test:print && npm run test:lighthouse",
+    "deploy:dryrun": "wrangler deploy --dry-run -c wrangler.v2.jsonc --env staging && wrangler deploy --dry-run -c wrangler.v2.jsonc --env production",
+    "docs:features": "node scripts/features-doc.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
     "@fontsource/noto-naskh-arabic": "^5.2.8",
     "@fontsource/noto-nastaliq-urdu": "^5.2.8",
     "@hono/node-server": "^1.19.0",
+    "@simplewebauthn/browser": "^14.0.0",
+    "@simplewebauthn/server": "^14.0.3",
     "@tanstack/react-query": "^5.90.0",
     "dexie": "^4.2.0",
     "hono": "^4.10.0",
@@ -40,14 +51,21 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@sparticuz/chromium": "^153.0.0",
     "@types/node": "^22.18.0",
     "@types/react": "^18.3.24",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.7.0",
+    "axe-core": "^4.14.0",
+    "lighthouse": "^13.6.0",
+    "pixelmatch": "^8.0.0",
+    "playwright-core": "^1.64.1",
+    "pngjs": "^7.0.0",
     "tsx": "^4.20.0",
     "typescript": "^5.9.3",
     "vite": "^6.3.6",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "wrangler": "^4.45.0"
   },
   "engines": {
     "node": ">=22"

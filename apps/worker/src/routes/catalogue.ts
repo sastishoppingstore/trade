@@ -3,7 +3,7 @@ import type { Hono } from 'hono';
 import type { AppEnv, AppVars } from '../context.js';
 import {
   ok, fail, handle, me, audit, nowIso, toCsv, getSetting,
-  cacheRead, cacheWrite, purgePublicCache, rateLimit, clientIp, BizError, requirePerm,
+  cacheRead, cacheWrite, purgePublicCache, verifyTurnstile, rateLimit, clientIp, BizError, requirePerm,
 } from '../context.js';
 import type { DB } from '../db.js';
 import { productSchema, categorySchema, brandSchema, importSchema, enquirySchema,
@@ -191,6 +191,9 @@ export function registerCatalogue(app: H) {
     const raw = await c.req.json();
     if (raw.honeypot) return ok(c, { reference: '' }); // silently drop bots
     if (Number(raw.elapsed_ms) < 1200) return fail(c, 400, 'TIME_TRAP', 'براہِ کرم فارم بھر کر دوبارہ بھیجیں', 'Please submit the form again');
+    if (c.env.TURNSTILE_SECRET && !(await verifyTurnstile(c, String(raw.turnstile_token ?? '')))) {
+      return fail(c, 403, 'TURNSTILE_FAILED', 'بوٹ کی تصدیق ناکام', 'Anti-bot verification failed');
+    }
     const body = enquirySchema.parse(raw);
     const seq = await db.prepare('SELECT prefix,next_value FROM invoice_sequences WHERE code=?').bind('ENQUIRY').first<any>();
     const number = `EQ-${new Date().getUTCFullYear()}-${String(seq?.next_value ?? 1).padStart(6, '0')}`;

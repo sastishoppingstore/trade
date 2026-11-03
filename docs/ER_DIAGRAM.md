@@ -1,4 +1,4 @@
-# ER DIAGRAM — D1 schema (76 tables, simplified)
+# ER DIAGRAM — D1 schema (77 tables: 76 in 0001 + 1 WebAuthn table in 0004)
 
 Full DDL: `migrations/0001_init.sql`. Mermaid rendering works in GitHub and most Markdown viewers.
 

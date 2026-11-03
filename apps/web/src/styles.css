@@ -3,13 +3,13 @@
    Logical properties (margin-inline, padding-inline, inset-inline) throughout
    so RTL (Urdu) and LTR (English) share one stylesheet.
    ========================================================================== */
-@font-face { font-family: 'Noto Nastaliq Urdu'; src: url('/fonts/nastaliq-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFC; }
-@font-face { font-family: 'Noto Naskh Arabic'; src: url('/fonts/naskh-400.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFC; }
-@font-face { font-family: 'Noto Naskh Arabic'; src: url('/fonts/naskh-600.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFC; }
-@font-face { font-family: 'Noto Naskh Arabic'; src: url('/fonts/naskh-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFC; }
-@font-face { font-family: 'Inter'; src: url('/fonts/inter-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
-@font-face { font-family: 'Inter'; src: url('/fonts/inter-600.woff2') format('woff2'); font-weight: 600; font-display: swap; }
-@font-face { font-family: 'Inter'; src: url('/fonts/inter-700.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Noto Nastaliq Urdu'; src: url('/fonts/nastaliq-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: optional; unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFC; }
+@font-face { font-family: 'Noto Naskh Arabic'; src: url('/fonts/naskh-400.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: optional; unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFC; }
+@font-face { font-family: 'Noto Naskh Arabic'; src: url('/fonts/naskh-600.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: optional; unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFC; }
+@font-face { font-family: 'Noto Naskh Arabic'; src: url('/fonts/naskh-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: optional; unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFC; }
+@font-face { font-family: 'Inter'; src: url('/fonts/inter-400.woff2') format('woff2'); font-weight: 400; font-display: optional; }
+@font-face { font-family: 'Inter'; src: url('/fonts/inter-600.woff2') format('woff2'); font-weight: 600; font-display: optional; }
+@font-face { font-family: 'Inter'; src: url('/fonts/inter-700.woff2') format('woff2'); font-weight: 700; font-display: optional; }
 
 :root {
   --brand-700: #14532D; --brand-600: #1B6B3A; --brand-500: #2E8B4F;
@@ -119,7 +119,7 @@ textarea.input { min-height: 96px; resize: vertical; }
 .chip.gray { background: var(--bg); color: var(--ink-500); border: 1px solid var(--line); }
 .chip.danger { background: #FBE9E7; color: var(--danger); }
 .chip.warning { background: var(--accent-100); color: var(--warning); }
-.chip.success { background: var(--brand-100); color: var(--success); }
+.chip.success { background: var(--brand-100); color: #14532D; } /* 7.9:1 on brand-100, WCAG AA */
 .chip.info { background: #E5EFFA; color: var(--info); }
 .chip.INCOMPLETE { background: #FBE9E7; color: var(--danger); font-family: var(--font-num); }
 .badge { font-family: var(--font-num); font-size: 11px; letter-spacing: .5px; }
@@ -163,6 +163,7 @@ table.table { width: 100%; border-collapse: collapse; font-size: 15px; }
 .pub-nav { display: flex; gap: 22px; align-items: center; }
 .pub-footer { background: var(--brand-700); color: #E8F4EC; padding: 40px 16px 32px; margin-block-start: 64px; }
 .pub-footer a { color: #E8F4EC; }
+.pub-footer .small, .pub-footer p.small { color: #D6EBDD; }
 .pub-footer .cols { max-width: 1200px; margin-inline: auto; display: grid; gap: 28px; grid-template-columns: 1fr; }
 .pub-container { max-width: 1200px; margin-inline: auto; padding-inline: 16px; }
 .pub-hero { min-height: 360px; background: var(--brand-50); display: flex; align-items: center; padding: 32px 16px; background-size: cover; background-position: center; }
@@ -314,5 +315,6 @@ pre { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; 
 .link-list a { display: block; padding: 12px 0; border-block-end: 1px solid var(--line); }
 .notice { border-inline-start: 4px solid var(--warning); background: var(--accent-100); padding: 12px 16px; border-radius: 8px; margin-block: 12px; }
 .notice.info { border-inline-start-color: var(--info); background: #E5EFFA; }
+.notice a { text-decoration: underline; text-underline-offset: 3px; font-weight: 700; }
 .wa-msg { direction: rtl; unicode-bidi: isolate; }
 @media (max-width: 767px) { .pub-nav { display: none; } }

@@ -443,7 +443,7 @@ export function SimpleForm({ config }: { config: any }) {
         if (f.type === 'money') return <MoneyField key={f.name} label={f.label} paisa={v ?? 0} onChange={(x) => set(f.name, x)} required={f.required} helper={f.helper} />;
         if (f.type === 'qty') return <QtyField key={f.name} label={f.label} milli={v ?? 0} onChange={(x) => set(f.name, x)} required={f.required} />;
         if (f.type === 'date') return <TextField key={f.name} label={f.label} value={v ?? TODAY()} onChange={(x) => set(f.name, x)} type="date" required={f.required} />;
-        if (f.type === 'textarea') return <Field key={f.name} label={f.label}><textarea className="input" value={v ?? ''} onChange={(e) => set(f.name, e.target.value)} /></Field>;
+        if (f.type === 'textarea') return <Field key={f.name} label={f.label}><textarea className="input" aria-label={f.label} value={v ?? ''} onChange={(e) => set(f.name, e.target.value)} /></Field>;
         if (f.type === 'select') return <SelectField key={f.name} label={f.label} value={v ?? f.options[0].value} onChange={(x) => set(f.name, x)} options={f.options} required={f.required} />;
         if (f.type === 'account') return <SelectField key={f.name} label={f.label} value={v ?? 'acct-cash'} onChange={(x) => set(f.name, x)} options={accOptions} required={f.required} />;
         if (f.type === 'party') return <Combobox key={f.name} label={f.label} value={v ?? ''} onChange={(x) => set(f.name, x)}

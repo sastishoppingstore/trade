@@ -45,6 +45,11 @@ const env: any = {
   BACKUP_ENCRYPTION_KEY: secrets.backup_encryption_key,
   EXPOSE_SETUP_TOKEN: '1',
   LOCAL_PREVIEW: '1',
+  // WebAuthn is domain-bound: local E2E uses localhost; production MUST set RP_ID/RP_ORIGIN
+  // to the final domain BEFORE the owner enrols a fingerprint (Part 10.3).
+  RP_ID: process.env.ZT_RP_ID ?? 'localhost',
+  RP_ORIGIN: process.env.ZT_RP_ORIGIN ?? `http://localhost:${process.env.PORT ?? 3000}`,
+  RP_NAME: 'ذیشان ٹریڈرز',
 };
 
 const app = createApp();
